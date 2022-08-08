@@ -1,0 +1,4 @@
+<launch>
+    <node name="parrot" pkg="hw_interface" type="parrot" output="screen"/>
+    <!--<node name="talker_node" pkg="my_first_"> -->
+</launch>
