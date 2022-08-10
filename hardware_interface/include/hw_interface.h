@@ -13,7 +13,8 @@ template<typename PublishT, typename SubscribeT>  //declare types for the messag
 class Hw_interface{
 public:
     Hw_interface(){}
-    Hw_interface(sensor_msgs::JointState publishTopicName, trajectory_msgs::JointTrajectory subscribeTopicName, int queueSize){
+    //Hw_interface(sensor_msgs::JointState publishTopicName, trajectory_msgs::JointTrajectory subscribeTopicName, int queueSize){
+    Hw_interface(std::string publishTopicName, std::string subscribeTopicName, int queueSize){
         publisherObj = nH.advertise<PublishT>(publishTopicName, queueSize);
         subscriberObj = nH.subscribe<SubscribeT>(subscribeTopicName, queueSize, &Hw_interface::subscriberCallback, this);   
     }    

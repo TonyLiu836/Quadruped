@@ -28,20 +28,6 @@ using namespace std;
 
 int offset = 0;
 
-//motor channels
-int ch0 = 0;
-int ch1 = 1;
-int ch2 = 2;
-int ch3 = 3;
-int ch4 = 4;
-int ch5 = 5;
-int ch6 = 6;
-int ch7 = 7;
-int ch8 = 8;
-int ch9 = 9;
-int ch10 = 10;
-int ch11 = 11;
-
 //robot joint state
 sensor_msgs::JointState robot_state;
 
@@ -73,7 +59,8 @@ int angleToAnalog(int angle) {
       return (analog_value);
 }
 
-void pwmwrite(int& angle, PCA9685 pwm, int& channel) {
+void pwmwrite(int angle, PCA9685 pwm, int& channel){
+//void pwmwrite(int& angle, PCA9685 pwm, int& channel) {        original line that uses pass-by-reference for the angle
     int val = 0;
 
     if (angle > 180) {
@@ -172,8 +159,12 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "publisher_subscriber_demo");
-
-    Hw_interface<std_msgs::String, std_msgs::String> hwInterface("joint_states", "joint_group_position_controller/command", 1000);
+    
+    //Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory> hwInterface("joint_states", "joint_group_position_controller/command", 1000);
+    
+    Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory> hwInterface("joint_states", "joint_group_position_controller/command", 100);
+    
+    //Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory> hwInterface(, , 100);
     ros::spin();
 }
 

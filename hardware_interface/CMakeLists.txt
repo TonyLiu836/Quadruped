@@ -7,7 +7,7 @@ project(hardware_interface)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp)
+find_package(catkin REQUIRED COMPONENTS roscpp trajectory_msgs sensor_msgs std_msgs)
 
 catkin_package()
 
@@ -20,8 +20,8 @@ add_subdirectory(PCA9685Lib)
 #add_executable(parrot src/hw_interface_demo.cpp)
 #target_link_libraries(parrot ${catkin_LIBRARIES})
 
-add_executable(hwInterface src/hw_interface.cpp)
-target_link_libraries(hwInterface ${catkin_LIBRARIES})
+add_executable(quad_hw_interface src/hw_interface.cpp)
+target_link_libraries(quad_hw_interface ${catkin_LIBRARIES})
 
-target_link_libraries(hwInterface pca9685lib)
+target_link_libraries(quad_hw_interface pca9685lib)
 #target_link_libraries(${PROJECT_NAME} pca9685lib) #library name (pca9685lib) should match with the name in the CMakeLists.txt file in the library's directory

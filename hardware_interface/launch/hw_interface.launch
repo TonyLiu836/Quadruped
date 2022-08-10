@@ -1,0 +1,3 @@
+<launch>
+    <node name="hw_interface" pkg="hw_interface" type="quad_hw_interface" output="screen"/>
+</launch>
