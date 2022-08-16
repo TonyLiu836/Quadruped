@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.10.0)
 project(hardware_interface)
 
+set(CMAKE_BULD_TYPE Debug)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -10,18 +11,10 @@ project(hardware_interface)
 find_package(catkin REQUIRED COMPONENTS roscpp trajectory_msgs sensor_msgs std_msgs)
 
 catkin_package()
-
-#add_library(pca9685lib STATIC src/PCA9685.cpp include/hw_interface.h)
-#target_link_libraries()
-
 include_directories(include ${catkin_INCLUDE_DIRS})
+add_executable(${PROJECT_NAME} src/hw_interface.cpp)
+
 add_subdirectory(PCA9685Lib)
 
-#add_executable(parrot src/hw_interface_demo.cpp)
-#target_link_libraries(parrot ${catkin_LIBRARIES})
-
-add_executable(quad_hw_interface src/hw_interface.cpp)
-target_link_libraries(quad_hw_interface ${catkin_LIBRARIES})
-
-target_link_libraries(quad_hw_interface pca9685lib)
-#target_link_libraries(${PROJECT_NAME} pca9685lib) #library name (pca9685lib) should match with the name in the CMakeLists.txt file in the library's directory
+target_link_libraries(${PROJECT_NAME} pca9685lib)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
