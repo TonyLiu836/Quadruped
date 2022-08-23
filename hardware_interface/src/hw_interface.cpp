@@ -91,16 +91,27 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
     for (size_t ind=0; ind<12; ++ind){
         pwmwrite(currPos[ind], pwm, ind);
         pos[ind] = currPos[ind];
+        //robot_state.name[ind] = receivedMsg->joint_names[ind];
+        robot_state.position[ind] = pos[ind];
     }
     
-    
+    /*
     for(size_t ind=0; ind <12; ++ind){
-        //robot_state.name[ind] = joint_names[ind];
+        robot_state.name[ind] = receivedMsg->joint_names[i];
         robot_state.position[ind] = pos[ind];
         //robot_state.velocity[ind] = vel[ind];
         //robot_state.effort[ind] = eff[ind];
     }
-    
+    */
+    /*
+    for(size_t ind=0; ind <12; ++ind){
+        ROS_INFO_STREAM("received msg joint names:" << receivedMsg->joint_names[ind]);
+        ROS_INFO_STREAM("robot_state joint names:" << robot_state.name[ind]);    
+        ROS_INFO_STREAM("vel" << robot_state.velocity[ind]);
+        ROS_INFO_STREAM("vel" << robot_state.effort[ind]);
+    }
+    */
+    //ROS_INFO_STREAM("*****************");
     publisherObj.publish(robot_state);      
 }
 
