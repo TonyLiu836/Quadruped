@@ -77,7 +77,10 @@ void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
     //return(0);
 }
 
-
+float radToDeg(float rad){
+    float pi = 3.1415926535;
+    return (rad * (180/pi));
+}
 
 template<>
 void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::subscriberCallback(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
@@ -90,7 +93,8 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
    
     //command the 12 joints to move to desired positoins
     for (size_t ind=0; ind<12; ++ind){
-        pwmwrite(currPos[ind], pwm, ind);
+        float angleDeg = radToDeg(currPos[ind]);
+        pwmwrite(angleDeg, pwm, ind);
         pos[ind] = currPos[ind];
         //robot_state.name[ind] = receivedMsg->joint_names[ind];
         joint_state.position[ind] = pos[ind];
