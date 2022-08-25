@@ -16,8 +16,8 @@
 #include <hw_interface.h>
 #include <std_msgs/String.h>
 
-#define MIN_PULSE_WIDTH 900
-#define MAX_PULSE_WIDTH 2100
+#define MIN_PULSE_WIDTH 500                 //original is 900
+#define MAX_PULSE_WIDTH 2500                //original is 2100
 
 using namespace std;
 
@@ -27,8 +27,8 @@ int offset = 0;
 
 //const char* joint_names[12] = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
 
-double pos[12];
-double currPos[12];
+float pos[12];
+float currPos[12];
 //float vel[12];
 //float eff[12];
 
@@ -51,7 +51,7 @@ int angleToAnalog(int angle) {
       return (analog_value);
 }
 
-void pwmwrite(double& angle, PCA9685 pwm, size_t& channel){
+void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
 //void pwmwrite(int angle, PCA9685 pwm, int& channel){
 //void pwmwrite(int& angle, PCA9685 pwm, int& channel) {        original line that uses pass-by-reference for the angle
     int val = 0;
@@ -81,8 +81,9 @@ void pwmwrite(double& angle, PCA9685 pwm, size_t& channel){
 
 template<>
 void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::subscriberCallback(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
-
-    //set the current position to the newest incoming trajectory     
+//void Hw_interface<trajectory_msgs::JointTrajectory>::subscriberCallback(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
+    //set the current position to the newest incoming trajectory   
+    joint_state.header.stamp = ros::Time::now();  
     for(size_t i=0; i < 12; ++i){
         currPos[i] = receivedMsg->points[0].positions[i];    
     }
@@ -92,7 +93,7 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
         pwmwrite(currPos[ind], pwm, ind);
         pos[ind] = currPos[ind];
         //robot_state.name[ind] = receivedMsg->joint_names[ind];
-        robot_state.position[ind] = pos[ind];
+        joint_state.position[ind] = pos[ind];
     }
     
     /*
@@ -112,7 +113,9 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
     }
     */
     //ROS_INFO_STREAM("*****************");
-    publisherObj.publish(robot_state);      
+    
+    publisherObj.publish(joint_state);      
+    //jointStatePublisher.publish(joint_state);
 }
 
 
@@ -120,8 +123,8 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
 int main(int argc, char** argv){
     ros::init(argc, argv, "hw_interface");
     
-    Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory> hwInterface("joint_states", "joint_group_position_controller/command", 1000);
-    
+    Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory> hwInterface("joint_states", "joint_group_position_controller/command", 100);
+    //Hw_interface<trajectory_msgs::JointTrajectory> hwInterface("joint_state", "joint_group_position_controller/command", 1000);
     ros::spin();
 }
 

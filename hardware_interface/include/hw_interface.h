@@ -10,6 +10,7 @@
 //extern PCA9685 pwm;
 
 template<typename PublishT, typename SubscribeT>  //declare types for the messages of the publisher and subscriber
+//template<typename SubscribeT>
 
 class Hw_interface{
 public:
@@ -18,17 +19,21 @@ public:
     }
     //Hw_interface(sensor_msgs::JointState publishTopicName, trajectory_msgs::JointTrajectory subscribeTopicName, int queueSize){
     Hw_interface(std::string publishTopicName, std::string subscribeTopicName, int queueSize)
+    //HW_interface(std::string subscribeTopicName, int queueSize)
     {
         publisherObj = nH.advertise<PublishT>(publishTopicName, queueSize);
         subscriberObj = nH.subscribe<SubscribeT>(subscribeTopicName, queueSize, &Hw_interface::subscriberCallback, this);   
-        
-        robot_state.position.resize(12);
-        robot_state.velocity.resize(12);
-        robot_state.effort.resize(12);
-        //robot_state.name.resize(12);
-        //robot_state.name = {"front_left_hip", "front_left_upper_leg","front_left_lower_leg", "front_right_hip", "front_right_upper_leg", "front_right_lower_leg", "back_left_hip", "back_left_upper_leg", "back_left_lower_leg", "back_right_hip", "back_right_upper_leg", "back_right_lower_leg"};
-        //robot_state.name = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
-        robot_state.name = {"motor_front_left_hip","motor_front_left_upper_leg", "motor_front_left_lower_leg","motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
+        //jointStatePublisher = nH.advertise<sensor_msgs::JointState>("Joint",100);
+
+        joint_state.position.resize(12);
+        joint_state.velocity.resize(12);
+        joint_state.effort.resize(12);
+        //joint_state.name.resize(12);
+        //joint_state.name = {"front_left_hip", "front_left_upper_leg","front_left_lower_leg", "front_right_hip", "front_right_upper_leg", "front_right_lower_leg", "back_left_hip", "back_left_upper_leg", "back_left_lower_leg", "back_right_hip", "back_right_upper_leg", "back_right_lower_leg"};
+        //joint_state.name = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
+
+        //joint_state.name = {"motor_front_left_hip","motor_front_left_upper_leg", "motor_front_left_lower_leg","motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
+        joint_state.name = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
         pwm.init(1, 0x40);
         pwm.setPWMFreq(FREQUENCY);
     }
@@ -37,8 +42,9 @@ public:
 protected:
     ros::Subscriber subscriberObj;
     ros::Publisher publisherObj;
+    //ros::Publisher jointStatePublisher;    
     ros::NodeHandle nH;
-    sensor_msgs::JointState robot_state;
+    sensor_msgs::JointState joint_state;
     PCA9685 pwm;
 };
 
