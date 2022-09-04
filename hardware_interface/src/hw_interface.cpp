@@ -16,21 +16,15 @@
 #include <hw_interface.h>
 #include <std_msgs/String.h>
 
-#define MIN_PULSE_WIDTH 500                 //original is 900
-#define MAX_PULSE_WIDTH 2500                //original is 2100
+#define MIN_PULSE_WIDTH 900                 //original is 900
+#define MAX_PULSE_WIDTH 2100                //original is 2100
 
 using namespace std;
 
 int offset = 0;
 
-//const char* joint_name[16] = {"back_left_foot", "back_left_hip", "back_left_lower_leg", "back_left_upper_leg", "back_right_foot","back_right_hip", "back_right_lower_leg", "back_right_upper_leg", "front_left_foot","front_left_hip", "front_left_lower_leg", "front_left_upper_leg", "front_right", "front_right_hip","front_right_lower_leg","front_right_upper_leg"};
-
-//const char* joint_names[12] = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
-
 float pos[12];
 float currPos[12];
-//float vel[12];
-//float eff[12];
 
 //Declaration of Functions used ==================================
 void pwmwrite(int& angle, PCA9685 pwm, size_t& channel);
@@ -64,8 +58,6 @@ void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
     }
     
     val = angleToAnalog(angle);
-
-    //not sure what offset does
     val += offset;
 
     //setPWM(self, channel, on, off
@@ -73,8 +65,6 @@ void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
     //on: The tick (between 0..4095) when the signal should transition from low to high
     //off:the tick (between 0..4095) when the signal should transition from high to low
     pwm.setPWM(channel,0,val);
-    //cout << "Channel: " << channel << "\tSet to angle: " << angle << "\tVal: " << val << endl;
-    //return(0);
 }
 
 float radToDeg(float rad){
@@ -96,39 +86,15 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
         float angleDeg = radToDeg(currPos[ind]);
         pwmwrite(angleDeg, pwm, ind);
         pos[ind] = currPos[ind];
-        //robot_state.name[ind] = receivedMsg->joint_names[ind];
         joint_state.position[ind] = pos[ind];
     }
-    
-    /*
-    for(size_t ind=0; ind <12; ++ind){
-        robot_state.name[ind] = receivedMsg->joint_names[i];
-        robot_state.position[ind] = pos[ind];
-        //robot_state.velocity[ind] = vel[ind];
-        //robot_state.effort[ind] = eff[ind];
-    }
-    */
-    /*
-    for(size_t ind=0; ind <12; ++ind){
-        ROS_INFO_STREAM("received msg joint names:" << receivedMsg->joint_names[ind]);
-        ROS_INFO_STREAM("robot_state joint names:" << robot_state.name[ind]);    
-        ROS_INFO_STREAM("vel" << robot_state.velocity[ind]);
-        ROS_INFO_STREAM("vel" << robot_state.effort[ind]);
-    }
-    */
-    //ROS_INFO_STREAM("*****************");
-    
+
     publisherObj.publish(joint_state);      
-    //jointStatePublisher.publish(joint_state);
 }
-
-
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "hw_interface");
-    
     Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory> hwInterface("joint_states", "joint_group_position_controller/command", 100);
-    //Hw_interface<trajectory_msgs::JointTrajectory> hwInterface("joint_state", "joint_group_position_controller/command", 1000);
     ros::spin();
 }
 
