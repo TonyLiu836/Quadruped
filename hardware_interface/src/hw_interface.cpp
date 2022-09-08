@@ -101,27 +101,17 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
 //void Hw_interface<trajectory_msgs::JointTrajectory>::subscriberCallback(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
     //set the current position to the newest incoming trajectory   
     joint_state.header.stamp = ros::Time::now();  
-    //unsigned int numJoints = receivedMsg->joint_names.size();
-    //joint_state.name.resize(numJoints);
 
-    //for(size_t i=0; i<numJoints; ++i){                                      //resize joint_state names array to accomodate different sizes.
-    //    joint_state.name[i] = receivedMsg->joint_names[i]; 
-        //ROS_INFO_STREAM("joint name= " << receivedMsg->joint_names[i]);
-    //}
-
+    //ROS_INFO_STREAM("joint name= " << receivedMsg->joint_names[i] << "angle= " << angleDeg);
+    ROS_INFO_STREAM("received joint positions:" << receivedMsg->points[0]);
     for(size_t i=0; i < 12; ++i){
         currPos[i] = receivedMsg->points[0].positions[i];   
         float angleDeg = radToDeg(currPos[i]); 
-        /*        
-        if (i==2 || i == 5){
-           currPos[i] = currPos[i] - 45.0; 
-        }
-        */
-        //joint_state.name[i] = receivedMsg->joint_names[i];
-        ROS_INFO_STREAM("joint name= " << receivedMsg->joint_names[i] << "angle= " << angleDeg);
+        //ROS_INFO_STREAM("joint name= " << receivedMsg->joint_names[i] << "angle= " << angleDeg);
 
     }
-   
+    
+    /*
     //command the 12 joints to move to desired positoins
     for (size_t ind=0; ind<12; ++ind){
         float angleServo;
@@ -141,27 +131,37 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
         //robot_state.name[ind] = receivedMsg->joint_names[ind];
         joint_state.position[ind] = pos[ind];
     }
-    
-    /*
-    for(size_t ind=0; ind <12; ++ind){
-        robot_state.name[ind] = receivedMsg->joint_names[i];
-        robot_state.position[ind] = pos[ind];
-        //robot_state.velocity[ind] = vel[ind];
-        //robot_state.effort[ind] = eff[ind];
-    }
     */
-    /*
-    for(size_t ind=0; ind <12; ++ind){
-        ROS_INFO_STREAM("received msg joint names:" << receivedMsg->joint_names[ind]);
-        ROS_INFO_STREAM("robot_state joint names:" << robot_state.name[ind]);    
-        ROS_INFO_STREAM("vel" << robot_state.velocity[ind]);
-        ROS_INFO_STREAM("vel" << robot_state.effort[ind]);
-    }
-    */
-    //ROS_INFO_STREAM("*****************");
     
+    for (size_t ind=0; ind<12; ++ind){
+        float servoAngle; 
+        int angleDeg = radToDeg(currPos[ind]);
+        if ((ind<3) || (5<ind && ind<9)){                          //left legs
+            //ROS_INFO_STREAM("****reaches here LEFT LEG****");
+            if (ind==1 || ind==2 || ind==7 || ind==8){
+                angleDeg = -1*angleDeg;
+            }
+            servoAngle = convChamp2Servo(angleDeg);
+        }
+        else{                                           //right legs
+            //ROS_INFO_STREAM("****reaches here RIGHT LEG ****");
+            
+            /*            
+            if (ind==5 || ind==11){                   //might need to include the upper leg joints as well (don't need to multiply leg angles by -1)
+                //angleDeg = -1*angleDeg;
+                angleDeg = angleDeg;
+            }    
+            */    
+            servoAngle = convChamp2Servo(int(180 - angleDeg));   
+        }
+
+        pwmwrite(servoAngle, pwm, ind);
+        pos[ind] = currPos[ind];
+        joint_state.position[ind] = pos[ind];
+    
+    }
+    //ROS_INFO_STREAM("*****************");    
     publisherObj.publish(joint_state);      
-    //jointStatePublisher.publish(joint_state);
 }
 
 
