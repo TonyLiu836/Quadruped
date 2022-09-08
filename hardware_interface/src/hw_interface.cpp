@@ -52,9 +52,9 @@ int angleToAnalog(int angle) {
       return (analog_value);
 }
 
-int conv180To270(int angle180){
-    int angle270 = int(angle180 * 180 / 270);       //here angle180 is the angle sent by champ (0~180), need to conv this to be in range (0~270)
-    return angle270;                                //convert angle0 to the actual angle the servo will rotate to (angle270)
+int convChamp2Servo(int angleChamp){
+    int angleServo= int(angleChamp * 180 / 270);       //here angleChamp is the angle sent by champ (0~180), need to conv this to be in range (0~270)
+    return angleServo;                                //convert angleChamp to the actual angle the servo (angleServo) will rotate to.
 }
 
 void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
@@ -124,17 +124,19 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
    
     //command the 12 joints to move to desired positoins
     for (size_t ind=0; ind<12; ++ind){
-        float angle270;
+        float angleServo;
         int angleDeg = radToDeg(currPos[ind]);
+
+
         if (ind == 1 || ind == 2|| ind == 4 || ind ==5){
-            angle270 = conv180To270(-1*angleDeg);        
+            angleServo = convChamp2Servo(-1*angleDeg);        
         }
         else{
-            angle270 = conv180To270(angleDeg);
+            angleServo = convChamp2Servo(angleDeg);
         }
 
        
-        pwmwrite(angle270, pwm, ind);
+        pwmwrite(angleServo, pwm, ind);
         pos[ind] = currPos[ind];
         //robot_state.name[ind] = receivedMsg->joint_names[ind];
         joint_state.position[ind] = pos[ind];
