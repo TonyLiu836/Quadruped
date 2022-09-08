@@ -24,17 +24,18 @@ public:
         publisherObj = nH.advertise<PublishT>(publishTopicName, queueSize);
         subscriberObj = nH.subscribe<SubscribeT>(subscribeTopicName, queueSize, &Hw_interface::subscriberCallback, this);   
         //jointStatePublisher = nH.advertise<sensor_msgs::JointState>("Joint",100);
-
+        //joint_state.name.resize(15);
         joint_state.position.resize(12);
         joint_state.velocity.resize(12);
         joint_state.effort.resize(12);
-        //joint_state.name.resize(12);
+
         //joint_state.name = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
 
         //joint_state.name = {"motor_front_left_hip","motor_front_left_upper_leg", "motor_front_left_lower_leg","motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
-        
-        //this is the order listed in Open_quadruped repository
+
         joint_state.name = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg"};
+        
+        //joint_state.name = {"motor_front_left_hip", "motor_front_left_upper_leg", "motor_front_left_lower_leg", "front_left_leg_foot", "motor_front_right_hip", "motor_front_right_upper_leg", "motor_front_right_lower_leg", "front_right_leg_foot","motor_back_left_hip", "motor_back_left_upper_leg", "motor_back_left_lower_leg", "bacK_left_leg_foot", "motor_back_right_hip", "motor_back_right_upper_leg", "motor_back_right_lower_leg", "back_right_leg_foot"};
         pwm.init(1, 0x40);
         pwm.setPWMFreq(FREQUENCY);
     }

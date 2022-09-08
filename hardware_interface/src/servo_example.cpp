@@ -11,8 +11,8 @@
 
 #include <string.h>
 
-#define MIN_PULSE_WIDTH 900
-#define MAX_PULSE_WIDTH 2100
+#define MIN_PULSE_WIDTH 500 //900
+#define MAX_PULSE_WIDTH 2500 //2100
 #define FREQUENCY 50
 
 using namespace std;
@@ -71,7 +71,7 @@ int pwmwrite(int& angle, PCA9685 pwm, int& channel) {
 int main () {
 
     int homeh = 0;
-	int homev = 180;
+	int homev = 45;
 	
 	//make sure you use the right address values.
 	PCA9685 pwm;
