@@ -58,18 +58,13 @@ int convChamp2Servo(int angleChamp){
 }
 
 void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
-//void pwmwrite(int angle, PCA9685 pwm, int& channel){
 //void pwmwrite(int& angle, PCA9685 pwm, int& channel) {        original line that uses pass-by-reference for the angle
     int val = 0;
     
     if (angle > 180) {
        angle = 179;
     }
-    /*
-    if(angle > 270){
-        angle = 269;    
-    }
-    */
+
     if (angle < 0) {
        angle = 1;
     }
@@ -84,21 +79,16 @@ void pwmwrite(float& angle, PCA9685 pwm, size_t& channel){
     //on: The tick (between 0..4095) when the signal should transition from low to high
     //off:the tick (between 0..4095) when the signal should transition from high to low
     pwm.setPWM(channel,0,val);
-    //cout << "Channel: " << channel << "\tSet to angle: " << angle << "\tVal: " << val << endl;
-    //return(0);
 }
 
 float radToDeg(float rad){
     float pi = 3.1415926535;
-    if (rad < 0){
-        return float(-1 * rad * (180/pi));
-    }
 
+    return float(rad * (180/pi));
 }
 
 template<>
 void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::subscriberCallback(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
-//void Hw_interface<trajectory_msgs::JointTrajectory>::subscriberCallback(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
     //set the current position to the newest incoming trajectory   
     joint_state.header.stamp = ros::Time::now();  
 
@@ -106,53 +96,36 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
     ROS_INFO_STREAM("received joint positions:" << receivedMsg->points[0]);
     for(size_t i=0; i < 12; ++i){
         currPos[i] = receivedMsg->points[0].positions[i];   
-        float angleDeg = radToDeg(currPos[i]); 
-        //ROS_INFO_STREAM("joint name= " << receivedMsg->joint_names[i] << "angle= " << angleDeg);
-
     }
     
-    /*
-    //command the 12 joints to move to desired positoins
-    for (size_t ind=0; ind<12; ++ind){
-        float angleServo;
-        int angleDeg = radToDeg(currPos[ind]);
-
-
-        if (ind == 1 || ind == 2|| ind == 4 || ind ==5){
-            angleServo = convChamp2Servo(-1*angleDeg);        
-        }
-        else{
-            angleServo = convChamp2Servo(angleDeg);
-        }
-
-       
-        pwmwrite(angleServo, pwm, ind);
-        pos[ind] = currPos[ind];
-        //robot_state.name[ind] = receivedMsg->joint_names[ind];
-        joint_state.position[ind] = pos[ind];
-    }
-    */
     
     for (size_t ind=0; ind<12; ++ind){
         float servoAngle; 
         int angleDeg = radToDeg(currPos[ind]);
         if ((ind<3) || (5<ind && ind<9)){                          //left legs
-            //ROS_INFO_STREAM("****reaches here LEFT LEG****");
-            if (ind==1 || ind==2 || ind==7 || ind==8){
-                angleDeg = -1*angleDeg;
+            angleDeg = -1*angleDeg;
+            if(ind==2 || ind==8){
+
+                servoAngle = convChamp2Servo(angleDeg);
             }
-            servoAngle = convChamp2Servo(angleDeg);
+            else if (ind==1 || ind==7){
+                servoAngle = convChamp2Servo(int(180 - angleDeg));
+            }
+            else{
+                servoAngle = convChamp2Servo(angleDeg);
+            }
         }
         else{                                           //right legs
-            //ROS_INFO_STREAM("****reaches here RIGHT LEG ****");
-            
-            /*            
-            if (ind==5 || ind==11){                   //might need to include the upper leg joints as well (don't need to multiply leg angles by -1)
-                //angleDeg = -1*angleDeg;
-                angleDeg = angleDeg;
-            }    
-            */    
-            servoAngle = convChamp2Servo(int(180 - angleDeg));   
+            if (ind == 5  || ind == 11){              // for right side lower legs
+                angleDeg = -1*angleDeg;
+                servoAngle = convChamp2Servo(int(180 - angleDeg));   
+            }
+            else if (ind==4 || ind ==10){
+                servoAngle = convChamp2Servo(int(180 - angleDeg));
+            }
+            else{                                           //right hips
+                servoAngle = convChamp2Servo(angleDeg);                
+            }
         }
 
         pwmwrite(servoAngle, pwm, ind);
@@ -160,7 +133,6 @@ void Hw_interface<sensor_msgs::JointState, trajectory_msgs::JointTrajectory>::su
         joint_state.position[ind] = pos[ind];
     
     }
-    //ROS_INFO_STREAM("*****************");    
     publisherObj.publish(joint_state);      
 }
 
