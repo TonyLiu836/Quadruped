@@ -12,7 +12,6 @@
 #include <string>
 #include <string.h>
 
-#include <ros/ros.h>
 #include <hw_interface.h>
 #include <std_msgs/String.h>
 
