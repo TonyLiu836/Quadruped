@@ -37,6 +37,9 @@
 //can_frame frame;
 
 int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+
+
+
 /*
 float fmaxf(float x, float y){
     /// Returns maximum of x, y ///
@@ -98,7 +101,7 @@ void close_port(std::string can_id){
     std::cout << "port " << can_id << " closed" << std::endl;
 }
 
-void pack_cmd(can_frame& frame, float pos, float vel, float KP, float KD, float T_FF){
+void pack_msg(can_frame& frame, float pos, float vel, float KP, float KD, float T_FF){
     
     //std::cout << frame << std::endl;
     
@@ -119,6 +122,20 @@ void pack_cmd(can_frame& frame, float pos, float vel, float KP, float KD, float 
 }
 
 
+void unpack_msg(can_frame& frame, MotorStatusStruct* motor){
+    int pos_int = frame.data[0] << 8 | frame.data[1];
+    int vel_int = frame.data[2] << 4 | frame.data[3] >> 4;
+    int kp_int = (frame.data[3] & 0x0F) << 8 | frame.data[4];
+    int kd_int = frame.data[5] << 4 | frame.data[6] >> 4;
+    int FF_int = (frame.data[6] & 0x0F) << 8 | frame.data[7];
+    
+    motor -> p_des = uint_to_float(pos_int, P_MIN, P_MAX, 16);
+    motor -> vel_des = uint_to_float(vel_int, V_MIN, V_MAX, 12);
+    motor -> kp = uint_to_float(kp_int, KP_MIN, KP_MAX, 12);
+    motor -> kd = uint_to_float(kd_int, KD_MIN, KD_MAX, 12);
+    motor -> t_ff = uint_to_float(FF_int, T_MIN, T_MAX, 12);
+    
+}
 
 void enter_motor_mode(const char* interface_name, int id_can){
     int nbytes;
@@ -149,7 +166,10 @@ void enter_motor_mode(const char* interface_name, int id_can){
     nbytes = write(s, &frame, sizeof(struct can_frame));
 
     std::cout << "Motor Mode Enabled!" << std::endl;
-    //std::cout << "nbytes= " << nbytes << std::endl;
+    
+    //get current motor pos, vel, current
+    nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    unpack_msg(nbytes, );
 }
 
 void exit_motor_mode(const char* interface_name, int id_can){
@@ -179,6 +199,9 @@ void exit_motor_mode(const char* interface_name, int id_can){
 
     std::cout << "Motor Mode Disabled!" << std::endl;
     
+    //get current motor pos, vel, current
+    nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    unpack_msg(nbytes, );
 }
 
 void zero_position_sensor(const char* interface_name, int id_can){
@@ -207,8 +230,14 @@ void zero_position_sensor(const char* interface_name, int id_can){
     
     nbytes = write(s, &frame, sizeof(struct can_frame));
 
-    std::cout << "Current position set to zero!" << std::endl ;
+    std::cout << "Current position set to zero!" << std::endl;
+    
+    //get current motor pos, vel, current
+    nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    
+    unpack_msg(nbytes, );
 }
+
 
 
 void write_can_frame(const char* interface_name, int id_can, int pos, int vel, int KP, int KD, int FF){
@@ -229,13 +258,16 @@ void write_can_frame(const char* interface_name, int id_can, int pos, int vel, i
     frame.can_id  = id_can;          //motor id
     frame.can_dlc = 8;              //len of data 
 
-    pack_cmd(frame, pos, vel, KP, KD, FF);
+    pack_msg(frame, pos, vel, KP, KD, FF);
     
     nbytes = write(s, &frame, sizeof(struct can_frame));
 
     
     std::cout << "nbytes= " << nbytes << std::endl;
     
+    //get current motor pos, vel, current
+    nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    unpack_msg(nbytes, );
 }
 
 
@@ -243,6 +275,14 @@ void write_can_frame(const char* interface_name, int id_can, int pos, int vel, i
 
 int main(){
     //setup CAN
+    
+    struct MotorStatusStruct
+    {
+        int p_des, v_des, kp,kd,t_ff;
+    }
+
+    MotorStatusStruct motor1;
+    
     const char *interf_name = "can0";           
     open_port(interf_name, 1000000);
     
