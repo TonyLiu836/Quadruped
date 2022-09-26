@@ -3,7 +3,7 @@
 #define PF_CAN 29
 #endif
 
-#define motor1 0x01
+#define M1 0x01
 
 #include "../MathOpsLib/math_ops.h"
 #include <cstring>
@@ -20,7 +20,8 @@
 #include <net/if.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-
+#include <vector>
+#include <typeinfo>
 
 //limits 
 #define P_MIN -12.5f  // -4*pi
@@ -38,7 +39,10 @@
 
 int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
-
+struct MotorStatusStruct
+{
+    int p_des, v_des, kp,kd,t_ff;
+};
 
 /*
 float fmaxf(float x, float y){
@@ -122,25 +126,27 @@ void pack_msg(can_frame& frame, float pos, float vel, float KP, float KD, float 
 }
 
 
-void unpack_msg(can_frame& frame, MotorStatusStruct* motor){
-    int pos_int = frame.data[0] << 8 | frame.data[1];
-    int vel_int = frame.data[2] << 4 | frame.data[3] >> 4;
-    int kp_int = (frame.data[3] & 0x0F) << 8 | frame.data[4];
-    int kd_int = frame.data[5] << 4 | frame.data[6] >> 4;
-    int FF_int = (frame.data[6] & 0x0F) << 8 | frame.data[7];
+void unpack_msg(std::vector<int> data, MotorStatusStruct& motor){
+
+    int pos_int = data[0] << 8 | data[1];
+    int vel_int = data[2] << 4 | data[3] >> 4;
+    int kp_int = (data[3] & 0x0F) << 8 | data[4];
+    int kd_int = data[5] << 4 | data[6] >> 4;
+    int FF_int = (data[6] & 0x0F) << 8 | data[7];
     
-    motor -> p_des = uint_to_float(pos_int, P_MIN, P_MAX, 16);
-    motor -> vel_des = uint_to_float(vel_int, V_MIN, V_MAX, 12);
-    motor -> kp = uint_to_float(kp_int, KP_MIN, KP_MAX, 12);
-    motor -> kd = uint_to_float(kd_int, KD_MIN, KD_MAX, 12);
-    motor -> t_ff = uint_to_float(FF_int, T_MIN, T_MAX, 12);
-    
+    motor.p_des = uint_to_float(pos_int, P_MIN, P_MAX, 16);
+    motor.v_des = uint_to_float(vel_int, V_MIN, V_MAX, 12);
+    motor.kp = uint_to_float(kp_int, KP_MIN, KP_MAX, 12);
+    motor.kd = uint_to_float(kd_int, KD_MIN, KD_MAX, 12);
+    motor.t_ff = uint_to_float(FF_int, T_MIN, T_MAX, 12);
 }
 
-void enter_motor_mode(const char* interface_name, int id_can){
+
+void enter_motor_mode(const char* interface_name, int id_can, MotorStatusStruct& motor){
     int nbytes;
     const char *ifname = interface_name;
     struct sockaddr_can addr;
+    socklen_t len = sizeof(addr);
     struct ifreq ifr;
     strcpy(ifr.ifr_name, ifname);
     ioctl(s, SIOCGIFINDEX, &ifr);
@@ -162,21 +168,32 @@ void enter_motor_mode(const char* interface_name, int id_can){
     frame.data[6] = 0xFF;
     frame.data[7] = 0xFC;
     
-    
     nbytes = write(s, &frame, sizeof(struct can_frame));
 
     std::cout << "Motor Mode Enabled!" << std::endl;
     
     //get current motor pos, vel, current
-    nbytes = read(s, &frame, sizeof(struct can_frame)); 
-    unpack_msg(nbytes, );
+    //nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+    
+    std::cout << "nbytes2= " <<  nbytes2 << std::endl;
+
+    std::vector<int> recv_data;
+    for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
+        recv_data.push_back((int)frame.data[i]);
+    }
+    
+    unpack_msg(recv_data, motor);
+    
+    std::cout << "pos= " << motor.p_des << " vel= " << motor.v_des << " kp= " << motor.kp << " kd= " << motor.kd << " FF= " << motor.t_ff << std::endl;
 }
 
-void exit_motor_mode(const char* interface_name, int id_can){
+void exit_motor_mode(const char* interface_name, int id_can, MotorStatusStruct& motor){
         
     int nbytes;
     const char *ifname = interface_name;
     struct sockaddr_can addr;
+    socklen_t len = sizeof(addr);
     struct ifreq ifr;
     strcpy(ifr.ifr_name, ifname);
     ioctl(s, SIOCGIFINDEX, &ifr);
@@ -200,15 +217,25 @@ void exit_motor_mode(const char* interface_name, int id_can){
     std::cout << "Motor Mode Disabled!" << std::endl;
     
     //get current motor pos, vel, current
-    nbytes = read(s, &frame, sizeof(struct can_frame)); 
-    unpack_msg(nbytes, );
+    //nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+    //unpack_msg(frame, motor);
+    std::vector<int> recv_data;
+    for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
+        recv_data.push_back((int)frame.data[i]);
+    }
+    unpack_msg(recv_data, motor);
+    std::cout << "pos= " << motor.p_des << " vel= " << motor.v_des << " kp= " << motor.kp << " kd= " << motor.kd << " FF= " << motor.t_ff << std::endl;
+    
 }
 
-void zero_position_sensor(const char* interface_name, int id_can){
+
+void zero_position_sensor(const char* interface_name, int id_can, MotorStatusStruct& motor){
 
     int nbytes;
     const char *ifname = interface_name;
     struct sockaddr_can addr;
+    socklen_t len = sizeof(addr);
     struct ifreq ifr;
     strcpy(ifr.ifr_name, ifname);
     ioctl(s, SIOCGIFINDEX, &ifr);
@@ -233,18 +260,29 @@ void zero_position_sensor(const char* interface_name, int id_can){
     std::cout << "Current position set to zero!" << std::endl;
     
     //get current motor pos, vel, current
-    nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    //nbytes = read(s, &frame, sizeof(struct can_frame));
+    int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len); 
+    //std::cout << "here1" << std::endl;
+    //unpack_msg(frame, motor);
     
-    unpack_msg(nbytes, );
+    std::vector<int> recv_data;
+    for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
+        recv_data.push_back((int)frame.data[i]);
+    }
+    //std::cout << "here2" << std::endl;
+    
+    unpack_msg(recv_data, motor);
+    std::cout << "pos= " << motor.p_des << " vel= " << motor.v_des << " kp= " << motor.kp << " kd= " << motor.kd << " FF= " << motor.t_ff << std::endl;
 }
 
 
 
-void write_can_frame(const char* interface_name, int id_can, int pos, int vel, int KP, int KD, int FF){
+void write_can_frame(const char* interface_name, int id_can, int pos, int vel, int KP, int KD, int FF, MotorStatusStruct& motor){
        
     int nbytes;
     const char *ifname = interface_name;
     struct sockaddr_can addr;
+    socklen_t len = sizeof(addr);
     struct ifreq ifr;
     strcpy(ifr.ifr_name, ifname);
     ioctl(s, SIOCGIFINDEX, &ifr);
@@ -263,43 +301,42 @@ void write_can_frame(const char* interface_name, int id_can, int pos, int vel, i
     nbytes = write(s, &frame, sizeof(struct can_frame));
 
     
-    std::cout << "nbytes= " << nbytes << std::endl;
+    std::cout << "data written: " << std::endl;
     
     //get current motor pos, vel, current
-    nbytes = read(s, &frame, sizeof(struct can_frame)); 
-    unpack_msg(nbytes, );
+    //nbytes = read(s, &frame, sizeof(struct can_frame)); 
+    int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+    
+    std::vector<int> recv_data;
+    for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
+        recv_data.push_back((int)frame.data[i]);
+    }
+    unpack_msg(recv_data, motor);
+    std::cout << "pos= " << motor.p_des << " vel= " << motor.v_des << " kp= " << motor.kp << " kd= " << motor.kd << " FF= " << motor.t_ff << std::endl;
 }
 
 
 //used to test functions above
-
+/*
 int main(){
     //setup CAN
     
-    struct MotorStatusStruct
-    {
-        int p_des, v_des, kp,kd,t_ff;
-    }
-
     MotorStatusStruct motor1;
     
     const char *interf_name = "can0";           
     open_port(interf_name, 1000000);
     
-    enter_motor_mode(interf_name, motor1);
-    zero_position_sensor(interf_name, motor1);
-    //writing CAN frame
-    write_can_frame(interf_name, motor1 , 1, 1, 1, 1, 1);
+    enter_motor_mode(interf_name, M1, motor1);
+    zero_position_sensor(interf_name, M1, motor1);
     
-    exit_motor_mode(interf_name, motor1);
+    //writing CAN frame
+    write_can_frame(interf_name, M1, 1, 1, 1, 1, 1, motor1);
+    
+    exit_motor_mode(interf_name, M1, motor1);
     
     close_port(interf_name);
     
-    
-    //reading CAN frames
-    //int nbytes = read(s, &frame, sizeof(struct can_frame));
-    //std::cout << "read CAN " << nbytes << std::endl; 
-    
+
     return 0;
 }
-
+*/
