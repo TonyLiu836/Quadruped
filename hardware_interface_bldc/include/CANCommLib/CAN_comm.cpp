@@ -4,7 +4,7 @@
 #endif
 
 #define M1 0x01
-/*
+
 #include "../MathOpsLib/math_ops.h"
 
 #include <cstring>
@@ -23,7 +23,7 @@
 #include <sys/socket.h>
 #include <vector>
 #include <typeinfo>
-*/
+
 
 //limits 
 #define P_MIN -12.5f  // -4*pi

@@ -3,7 +3,7 @@
   <name>hardware_interface_bldc</name>
   <version>0.0.0</version>
   <description>The hardware_interface_bldc package</description>
-
+  <maintainer email="liux4408@umn.edu">Tony Liu</maintainer>
   <license>TODO</license>
 
   <buildtool_depend>catkin</buildtool_depend>
