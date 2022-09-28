@@ -3,10 +3,10 @@
 #define PF_CAN 29
 #endif
 
-#define M1 0x01
+//#define M1 0x01
 
 #include "../MathOpsLib/math_ops.h"
-
+#include "CAN_comm.h"
 #include <cstring>
 #include <linux/can.h>
 #include <sys/time.h>
@@ -41,10 +41,16 @@
 
 int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
+/*
 struct MotorStatusStruct
 {
+    std::string name;
+    int motor_id;
     int p_des, v_des, kp,kd,t_ff;
 };
+*/
+
+
 
 /*
 float fmaxf(float x, float y){

@@ -11,6 +11,8 @@
 #include <string.h>
 
 #include <std_msgs/String.h>
+#include "../include/CANCommLib/CAN_comm.h"
+#include "../include/MathOpsLib/math_ops.h"
 
 /*
     Subscribe to trajectory_msgs/JointTrajectory . This ROS message contains the joint angles (12DOF) that the actuators can use to move the robot.
@@ -21,11 +23,14 @@
 */
 
 
+/*
 struct MotorStatusStruct
 {
     std::string name;
+    int motor_id;
     int p_des, v_des, kp,kd,t_ff;
 };
+*/
 
 std::vector<MotorStatusStruct> motorStatus;
 
@@ -38,6 +43,7 @@ float radToDeg(float rad){
 */
 
 
+//callback from subscriber
 void receivedMsg(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
     //assume position is in radians for now (9.27.2022)
     for (int i = 0; i<12; i++){
@@ -49,13 +55,47 @@ void receivedMsg(const trajectory_msgs::JointTrajectory::ConstPtr& receivedMsg){
     
 }
 
+//initialize all motors - assigns CAN interface, motor id, and enters motor mode
 void setupMotors(){
-    
+    for (int i = 0; i < 12; ++i){
+        motorStatus.push_back(MotorStatusStruct());
+        motorStatus[i].name = "M"+ std::to_string(i);          //set name of motor to be M1, M2,etc
+        
+        const char *interf_name;
+        switch(i)                                 //each leg uses a different CAN interface 
+        {
+            case 0 ... 2:
+            {
+                interf_name = "can0";
+            }
+            case 3 ... 5:
+            {
+                interf_name = "can1";
+            }  
+            case 6 ... 8:
+            {
+                interf_name = "can2";
+            }
+            case 9 ... 11:
+            { 
+                interf_name = "can3";
+            }
+        }
+        
+        motorStatus[i].motor_id = (int)((i%3) + 1);
+        
+        open_port(interf_name, 1000000);
+        
+        //the pos, vel, torque initial values should be found here
+        enter_motor_mode(interf_name, motorStatus[i].motor_id, motorStatus[i]);
+    }
 }
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "hw_interface_bldc");
     ros::NodeHandle nh;
+    
+    std::vector<std::string> CAN_interfs = {"can0", "can1", "can2", "can3"};
     
     sensor_msgs::JointState joint_state;
     joint_state.position.resize(12);
@@ -65,16 +105,10 @@ int main(int argc, char** argv){
     
     ros::Publisher pub = nh.advertise<sensor_msgs::JointState>("joint_states", 100);
     ros::Subscriber sub = nh.subscribe<trajectory_msgs::JointTrajectory>("joint_group_position_controller/command", 100, &receivedMsg);
-
-
     
-    for (int i = 0; i < 12; ++i){
-        motorStatus.push_back(MotorStatusStruct());
-        motorStatus[i].name = "M"+ std::to_string(i);                     //set name of motor immediately
-    }
+    setupMotors();
 
     while(ros::ok()){
-        
 
         joint_state.header.stamp = ros::Time::now();
         for (int i=0; i<12; ++i){                       //update joint_state with current state of robot (pos, vel, torque)

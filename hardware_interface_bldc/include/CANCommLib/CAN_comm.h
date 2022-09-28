@@ -1,6 +1,6 @@
 #ifndef CAN_COMM_H
 #define CAN_COMM_H
-
+#endif
 /*
 #ifndef PF_CAN
 #define PF_CAN 29
@@ -24,6 +24,14 @@
 #include <sys/socket.h>
 #include <vector>
 #include <typeinfo>
+
+struct MotorStatusStruct
+{
+    std::string name;
+    int motor_id;
+    int p_des, v_des, kp,kd,t_ff;
+};
+
 
 void open_port(std::string can_id, int bitrate);
 void close_port(std::string can_id);
