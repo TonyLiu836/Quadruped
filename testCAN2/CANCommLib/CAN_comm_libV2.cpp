@@ -93,25 +93,6 @@ public:
         addr.can_ifindex = ifr.ifr_ifindex;
         bind(s, (struct sockaddr *)&addr, sizeof(addr));
     }
-
-
-    // void unpack_msg(std::vector<int> data){
-        
-    //     int pos_int = (data[0] << 8) | data[1];
-    //     int vel_int = (data[2] << 4) | (data[3] >> 4);
-    //     int kp_int = ((data[3] & 0xF) << 8) | data[4];
-    //     int kd_int = (data[5] << 4) | (data[6] >> 4);
-    //     int FF_int = ((data[6] & 0xF) << 8) | data[7];
-    //     // std::cout << "pos_int= " << pos_int << " | vel_int= " << vel_int << " | kp_int= " << kp_int << " | kd_int= " << kd_int << " | FF_int= " << FF_int << std::endl ;
-
-    //     p_des = uint_to_float(pos_int, P_MIN, P_MAX, 16);
-    //     v_des = uint_to_float(vel_int, V_MIN, V_MAX, 12);
-    //     kp = uint_to_float(kp_int, KP_MIN, KP_MAX, 12);
-    //     kd = uint_to_float(kd_int, KD_MIN, KD_MAX, 12);
-    //     t_ff = uint_to_float(FF_int, T_MIN, T_MAX, 12);
-        
-    //     std::cout << "pos= " << p_des << " vel= " << v_des << " kp= " << kp << " kd= " << kd << " FF= " << t_ff << std::endl;
-    // }
     
     void unpack_msg(std::vector<int> data){
         int pos_int = (data[1] << 8) | data[2];
@@ -130,6 +111,7 @@ public:
         
         //write CAN frame
         struct can_frame frame;
+        struct can_frame recv_frame;
 
         frame.can_id  = motor_id;          //motor id
         frame.can_dlc = 8;              //len of data 
@@ -147,17 +129,16 @@ public:
 
         std::cout << "Motor Mode Enabled!" << std::endl; 
         
-        int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
-                        
+        // int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+        int nbytes2 = read(s, &frame, sizeof(struct can_frame));
+        if (nbytes2 < 0){
+            perror("read");
+        }
+
         std::vector<int> recv_data;
         for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
             recv_data.push_back((int)frame.data[i]);
         }
-        
-        
-        std::cout << "nytes = " << nbytes << std::endl;
-        std::cout << "nytes2 = " << nbytes2 << std::endl;   
-        std::cout << "size of recv_data = " << recv_data.size() << std::endl;
 
         for (int i: recv_data){
             std::cout << i << " "<< std::endl;
@@ -187,7 +168,9 @@ public:
         
         nbytes = write(s, &frame, sizeof(struct can_frame));
         
-        int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+        // int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+        int nbytes2 = read(s, &frame, sizeof(struct can_frame));
+
         std::vector<int> recv_data;
         for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
             recv_data.push_back((int)frame.data[i]);
@@ -218,7 +201,8 @@ public:
 
         std::cout << "Current position set to zero!" << std::endl;
 
-        int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len); 
+        // int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len); 
+        int nbytes2 = read(s, &frame, sizeof(struct can_frame));
         
         std::vector<int> recv_data;
         for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
@@ -261,19 +245,12 @@ public:
         pack_msg(frame, pos, vel, KP, KD, FF);
 
         nbytes = write(s, &frame, sizeof(struct can_frame));
-        int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+        // int nbytes2 = recvfrom(s, &frame, sizeof(struct can_frame), addr.can_ifindex, (struct sockaddr*)&addr, &len);
+        int nbytes2 = read(s, &frame, sizeof(struct can_frame));
         
         std::vector<int> recv_data;
         for (int i = 0; i < sizeof(frame.data)/sizeof(frame.data[0]); i++){
             recv_data.push_back((int)frame.data[i]);
-        }
-        
-        std::cout << "nytes = " << nbytes << std::endl;
-        std::cout << "nytes2 = " << nbytes2 << std::endl;   
-        std::cout << "size of recv_data = " << recv_data.size() << std::endl;
-
-        for (int i: recv_data){
-            std::cout <<"received Data = " << i << " ";
         }
 
         unpack_msg(recv_data);
@@ -301,10 +278,10 @@ int main(){
 
     // write_can_frame(POS, VEL, KP, KD, FF);
     // M1.write_can_frame(3.1415,0,3,0.2,0);
-    M1.write_can_frame(1,1,1,1,1);
-    usleep(6*second);
+    M1.write_can_frame(2,2,2,2,2);
+    usleep(4*second);
     // M2.write_can_frame(0.5233,0,3,0.2,0);          //currently purple actuator
-    M1.write_can_frame(0,0,0,0,0);
+    // M1.write_can_frame(0,0,0,0,0);
     // M1.write_can_frame(1,1,1,1,1);
     // usleep(2*second);
 
